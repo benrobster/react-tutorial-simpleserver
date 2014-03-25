@@ -10,28 +10,27 @@ class ReactTutorialHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler)
     In addition to standard SimpleHTTPServer file-webserver functionality, adds
     POST-ability.
 
-    Upon receiving a POST:
-    (1) converts posted data to a JSON object,
-    (2) appends it to the json list assumed to be in the file at the requested URL, and
-    (3) returns the updated list of data.
-
     USAGE: python server.py to serve files from the cwd
     (works the same as running python -m SimpleHTTPServer in the directory)
     """
     def do_POST(self):
-        # Extract and print the contents of the POST
+        # (1) get posted data & convert it to python dict
         content_length = int(self.headers['Content-Length'])
         post_data = dict(urlparse.parse_qsl(self.rfile.read(content_length).decode('utf-8')))
+        # (2) open the file at the requested URL (404 if bad)
         try:
             f = open(self.translate_path(self.path), 'rb+')
         except IOError:
             self.send_error(404, "File not found")
             return None
+        # (3) load the file's contents into a list & append the posted data
         current_list = json.load(f)
         current_list.append(post_data)
+        # (4) write the updated content back to the file
         f.seek(0)
         json.dump(current_list, f)
         f.close()
+        # (5) return the updated content (defers to do_GET)
         return self.do_GET()
 
 
